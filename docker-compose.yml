@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  grokproxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: grokproxy:latest
+    container_name: grokproxy
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./cookies.yaml:/app/cookies.yaml:ro # Read-only mount
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health', timeout=5.0)" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - grokproxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: grokproxy-ngrok
+    restart: unless-stopped
+    command:
+      - "http"
+      - "grokproxy:8000"
+      - "--log=stdout"
+      - "--log-level=info"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040" # Ngrok web interface
+    networks:
+      - grokproxy-network
+    depends_on:
+      - grokproxy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  grokproxy-network:
+    driver: bridge
