@@ -38,7 +38,7 @@ class Message(BaseModel):
 
 class OpenAIRequest(BaseModel):
     """OpenAI-compatible chat completion request."""
-    model: str = Field(default="grok-latest", description="Model to use")
+    model: str = Field(default="grok-3", description="Model to use")
     stream: bool = Field(default=False, description="Whether to stream responses")
     max_tokens: Optional[int] = Field(default=4096, description="Maximum tokens to generate")
     messages: List[Message] = Field(..., description="List of messages in the conversation")
@@ -184,6 +184,10 @@ async def generate_response(messages: List[Message], model: str):
     message_content = messages[-1].content if messages else ""
     tokens = []
     
+    # Map grok-latest to grok-3
+    if model == "grok-latest":
+        model = "grok-3"
+        
     logger.info(f"Generating non-streaming response for model: {model}")
     
     async for token in grok_client.chat(prompt=message_content, model=model, reasoning=False):
@@ -196,6 +200,10 @@ async def generate_stream_response(messages: List[Message], model: str):
     """Generate a streaming response in OpenAI format."""
     message_content = messages[-1].content if messages else ""
     
+    # Map grok-latest to grok-3
+    if model == "grok-latest":
+        model = "grok-3"
+        
     logger.info(f"Generating streaming response for model: {model}")
     
     async for token in grok_client.chat(prompt=message_content, model=model, reasoning=False):
@@ -276,6 +284,26 @@ async def get_ngrok_info():
             "local_url": "http://localhost:8080",
             "dashboard": "http://localhost:4040"
         }
+
+
+@app.get("/v1/images/proxy")
+async def proxy_image(url: str):
+    """
+    Proxy an image download through the authenticated session.
+    
+    Args:
+        url: The image URL to download
+        
+    Returns:
+        StreamingResponse with the image content
+    """
+    if not url:
+        raise HTTPException(status_code=400, detail="URL parameter is required")
+    
+    return StreamingResponse(
+        grok_client.download_image(url),
+        media_type="image/png"  # Default to PNG, could be dynamic
+    )
 
 
 @app.get("/health")

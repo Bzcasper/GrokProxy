@@ -133,6 +133,23 @@ class GrokClient:
                                     
                                     # Extract response token
                                     token = chunk_json.get("result", {}).get("response", {}).get("token", "")
+                                    
+                                    # Extract generated images
+                                    response_data = chunk_json.get("result", {}).get("response", {})
+                                    generated_images = response_data.get("generatedImageUrls", [])
+                                    
+                                    # Also check inside modelResponse
+                                    if not generated_images:
+                                        model_response = response_data.get("modelResponse", {})
+                                        generated_images = model_response.get("generatedImageUrls", [])
+                                    
+                                    if generated_images:
+                                        for img_path in generated_images:
+                                            # Construct full URL (assuming assets.grok.com)
+                                            full_url = f"https://assets.grok.com/{img_path}"
+                                            # Yield as markdown image
+                                            yield f"\n\n![Generated Image]({full_url})\n"
+                                    
                                     if token:
                                         yield token
                                         
@@ -220,6 +237,48 @@ class GrokClient:
         logger.error(f"Max retries ({self.max_retries}) exceeded")
         yield "Error: Maximum retry attempts exceeded"
     
+    async def download_image(self, url: str) -> AsyncGenerator[bytes, None]:
+        """
+        Download an image using the authenticated session.
+        
+        Args:
+            url: The image URL to download
+            
+        Yields:
+            Image bytes chunks
+        """
+        await self._apply_rate_limit()
+        
+        try:
+            logger.info(f"Downloading image from: {url}")
+            
+            # Determine headers based on domain
+            if "grok.com" in url or "x.ai" in url:
+                # Internal Grok URL - keep all headers
+                headers = self.headers
+            else:
+                # External URL (Azure/AWS/etc) - use minimal headers
+                # Extra headers like Content-Type or Cookie can cause 403s with signed URLs
+                headers = {
+                    "User-Agent": self.user_agent,
+                    "Accept": "*/*"
+                }
+                logger.info("External domain detected - using minimal headers")
+            
+            async with self.client.stream("GET", url, headers=headers) as response:
+                if response.status_code == 200:
+                    async for chunk in response.aiter_bytes():
+                        yield chunk
+                else:
+                    logger.error(f"Failed to download image: {response.status_code}")
+                    # Log response body for debugging
+                    error_body = await response.aread()
+                    logger.error(f"Error body: {error_body.decode()[:200]}")
+                    yield b""
+        except Exception as e:
+            logger.error(f"Error downloading image: {e}")
+            yield b""
+
     async def close(self) -> None:
         """Close the HTTP client."""
         await self.client.aclose()
