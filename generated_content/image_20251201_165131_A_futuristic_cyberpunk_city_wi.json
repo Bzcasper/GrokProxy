@@ -1,0 +1,25 @@
+{
+  "prompt": "A futuristic cyberpunk city with neon lights and flying cars",
+  "result": {
+    "id": "chatcmpl-aba7af46-345b-4e52-a9cf-3fd8be4cf3c7",
+    "object": "chat.completion",
+    "created": 1764636691,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'photorealistic futuristic cyberpunk city with neon lights and flying cars, ultra detailed, professional photography, 8k'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 19,
+      "completion_tokens": 21,
+      "total_tokens": 40
+    }
+  },
+  "timestamp": "2025-12-01T16:51:31.217479"
+}

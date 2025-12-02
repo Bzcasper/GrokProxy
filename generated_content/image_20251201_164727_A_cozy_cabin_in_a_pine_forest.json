@@ -1,0 +1,25 @@
+{
+  "prompt": "A cozy cabin in a pine forest during winter with smoke from chimney",
+  "result": {
+    "id": "chatcmpl-d617ca05-899b-4732-9c64-a2749227c9d5",
+    "object": "chat.completion",
+    "created": 1764636447,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'image of a cozy cabin in a pine forest during winter with smoke from chimney, cinematic lighting, dramatic composition, 8k, highly detailed'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 23,
+      "completion_tokens": 28,
+      "total_tokens": 51
+    }
+  },
+  "timestamp": "2025-12-01T16:47:27.977752"
+}

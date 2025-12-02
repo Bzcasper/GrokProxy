@@ -1,0 +1,127 @@
+[
+  {
+    "prompt": "A majestic dragon flying over snow-capped mountains at sunset",
+    "result": {
+      "id": "chatcmpl-4656f76a-80fe-4481-aa9d-2963b079e644",
+      "object": "chat.completion",
+      "created": 1764636411,
+      "model": "grok-3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "I generated images with the prompt: 'majestic dragon flying over snow-capped mountains at sunset, cinematic lighting, dramatic composition, 8k, highly detailed'"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 19,
+        "completion_tokens": 21,
+        "total_tokens": 40
+      }
+    },
+    "timestamp": "2025-12-01T16:46:51.550594"
+  },
+  {
+    "prompt": "A futuristic cyberpunk city with neon lights and flying cars",
+    "result": {
+      "id": "chatcmpl-98de179c-5514-436f-95c1-6ff273971d8f",
+      "object": "chat.completion",
+      "created": 1764636424,
+      "model": "grok-3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "I generated images with the prompt: 'futuristic cyberpunk city with neon lights and flying cars, cinematic lighting, dramatic composition, 8k, highly detailed'"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 20,
+        "completion_tokens": 22,
+        "total_tokens": 42
+      }
+    },
+    "timestamp": "2025-12-01T16:47:04.322742"
+  },
+  {
+    "prompt": "An underwater scene with colorful coral reefs and tropical fish",
+    "result": {
+      "id": "chatcmpl-3783f321-73c1-4158-b93a-b20070d0be12",
+      "object": "chat.completion",
+      "created": 1764636434,
+      "model": "grok-3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "I generated images with the prompt: 'underwater scene with colorful coral reefs and tropical fish, cinematic lighting, dramatic composition, 8k, highly detailed'"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 20,
+        "completion_tokens": 22,
+        "total_tokens": 42
+      }
+    },
+    "timestamp": "2025-12-01T16:47:14.387399"
+  },
+  {
+    "prompt": "A cozy cabin in a pine forest during winter with smoke from chimney",
+    "result": {
+      "id": "chatcmpl-d617ca05-899b-4732-9c64-a2749227c9d5",
+      "object": "chat.completion",
+      "created": 1764636447,
+      "model": "grok-3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "I generated images with the prompt: 'image of a cozy cabin in a pine forest during winter with smoke from chimney, cinematic lighting, dramatic composition, 8k, highly detailed'"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 23,
+        "completion_tokens": 28,
+        "total_tokens": 51
+      }
+    },
+    "timestamp": "2025-12-01T16:47:27.977993"
+  },
+  {
+    "prompt": "A space station orbiting a distant planet with nebula in background",
+    "result": {
+      "id": "chatcmpl-b663ec41-a904-4244-abfd-a59071d65948",
+      "object": "chat.completion",
+      "created": 1764636460,
+      "model": "grok-3",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "I generated images with the prompt: 'space station orbiting a distant planet with nebula in background, cinematic lighting, dramatic composition, 8k, highly detailed'"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 21,
+        "completion_tokens": 23,
+        "total_tokens": 44
+      }
+    },
+    "timestamp": "2025-12-01T16:47:40.139590"
+  }
+]

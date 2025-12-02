@@ -1,0 +1,25 @@
+{
+  "prompt": "A majestic dragon flying over snow-capped mountains at sunset",
+  "result": {
+    "id": "chatcmpl-4656f76a-80fe-4481-aa9d-2963b079e644",
+    "object": "chat.completion",
+    "created": 1764636411,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'majestic dragon flying over snow-capped mountains at sunset, cinematic lighting, dramatic composition, 8k, highly detailed'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 19,
+      "completion_tokens": 21,
+      "total_tokens": 40
+    }
+  },
+  "timestamp": "2025-12-01T16:46:51.550222"
+}

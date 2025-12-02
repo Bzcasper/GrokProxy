@@ -1,0 +1,42 @@
+{
+    "version": 2,
+    "name": "grokproxy",
+    "builds": [
+        {
+            "src": "api/index.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "api/index.py"
+        }
+    ],
+    "env": {
+        "PYTHON_VERSION": "3.12"
+    },
+    "regions": [
+        "iad1"
+    ],
+    "functions": {
+        "api/index.py": {
+            "maxDuration": 60,
+            "memory": 1024
+        }
+    },
+    "crons": [
+        {
+            "path": "/api/cron/health-check",
+            "schedule": "*/5 * * * *"
+        },
+        {
+            "path": "/api/cron/cleanup",
+            "schedule": "0 0 * * *"
+        },
+        {
+            "path": "/api/cron/refresh-analytics",
+            "schedule": "0 * * * *"
+        }
+    ]
+}

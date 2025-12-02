@@ -1,0 +1,25 @@
+{
+  "prompt": "A cozy cabin in a pine forest during winter with smoke from chimney",
+  "result": {
+    "id": "chatcmpl-e5fd347b-8e72-4c22-8913-ebeadd744405",
+    "object": "chat.completion",
+    "created": 1764636716,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'photorealistic ultra detailed professional photography 8k of a cozy cabin in a pine forest during winter with smoke from chimney'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 22,
+      "completion_tokens": 26,
+      "total_tokens": 48
+    }
+  },
+  "timestamp": "2025-12-01T16:51:56.249217"
+}

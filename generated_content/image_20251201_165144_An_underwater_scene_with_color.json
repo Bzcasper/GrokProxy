@@ -1,0 +1,25 @@
+{
+  "prompt": "An underwater scene with colorful coral reefs and tropical fish",
+  "result": {
+    "id": "chatcmpl-b62946ab-0fbd-400a-aab1-f8202a47041c",
+    "object": "chat.completion",
+    "created": 1764636704,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'photorealistic underwater scene with colorful coral reefs and tropical fish, ultra detailed, professional photography, 8k'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 19,
+      "completion_tokens": 21,
+      "total_tokens": 40
+    }
+  },
+  "timestamp": "2025-12-01T16:51:44.144981"
+}

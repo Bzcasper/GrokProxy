@@ -1,0 +1,25 @@
+{
+  "prompt": "a futuristic AI robot in a neon city",
+  "result": {
+    "id": "chatcmpl-95fef409-e17c-4ee1-ac82-2087f5cd5c84",
+    "object": "chat.completion",
+    "created": 1764636668,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'futuristic AI robot in a neon city, cinematic lighting, dramatic composition, 8k, highly detailed'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 18,
+      "completion_tokens": 20,
+      "total_tokens": 38
+    }
+  },
+  "timestamp": "2025-12-01T16:51:08.685910"
+}

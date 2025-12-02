@@ -1,0 +1,25 @@
+{
+  "prompt": "A space station orbiting a distant planet with nebula in background",
+  "result": {
+    "id": "chatcmpl-b663ec41-a904-4244-abfd-a59071d65948",
+    "object": "chat.completion",
+    "created": 1764636460,
+    "model": "grok-3",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I generated images with the prompt: 'space station orbiting a distant planet with nebula in background, cinematic lighting, dramatic composition, 8k, highly detailed'"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 21,
+      "completion_tokens": 23,
+      "total_tokens": 44
+    }
+  },
+  "timestamp": "2025-12-01T16:47:40.139383"
+}
