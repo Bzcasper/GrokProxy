@@ -3,7 +3,14 @@ Minimal Vercel serverless entry point for GrokProxy.
 """
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
+from pathlib import Path
+
+# Get the directory containing this file
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_DIR = BASE_DIR / "static"
 
 # Create minimal FastAPI app
 app = FastAPI(
@@ -12,15 +19,29 @@ app = FastAPI(
     version="2.1.0"
 )
 
+# Mount static files if directory exists
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 @app.get("/")
 async def root():
-    """Root endpoint."""
+    """Serve beautiful homepage."""
+    html_path = STATIC_DIR / "index.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    
+    # Fallback JSON response
     return {
         "service": "GrokProxy",
         "version": "2.1.0",
         "status": "operational",
-        "environment": "vercel-serverless"
+        "environment": "vercel-serverless",
+        "endpoints": {
+            "health": "/health",
+            "models": "/v1/models",
+            "chat": "/v1/chat/completions"
+        }
     }
 
 
