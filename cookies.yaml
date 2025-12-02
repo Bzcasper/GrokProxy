@@ -1,10 +1,6 @@
 cookies:
   # Account 1 - Current working account
-  - "_ga=GA1.1.38684630.1764600086; i18nextLng=en; x-anonuserid=6e63446d-8320-4324-9e57-dd76d30bab96; x-challenge=cmsaoHdfbPo%2FK4laIxArNRBjtIlMIr8gmLDI3OXtxrIBwFeN7mlg7j%2FYCKa0Xpt5QQap5%2BAk7sAannIcJl9h19x08BjFedv9ZmtPF36V%2BWRmR0xXOG1liyt5UIRkDJ6b%2BqufZpfw3HyUStYE1oBrdjLdoMInT3yvP4M4UQ%2Bm%2FNV6Fun%2BkCQ%3D; x-signature=yx6BbqUCXhG2mwx2A6S4DCrUfTxNzhQXZ6XMz0X5qcYlCkaavXVXBaILRU5yhWUvtY7yMXF%2BUIGl5fZ3gKjLcQ%3D%3D; sso-rw=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzaW9uX2lkIjoiYTMyZDQ4YTctZGRjNy00NjU0LThkZGMtZDFmYWI0NGFhMTZlIn0.Tg99OVG6RmyATW3tm-WdGEaylAkywJZhHpf7rG-BC68; sso=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzaW9uX2lkIjoiYTMyZDQ4YTctZGRjNy00NjU0LThkZGMtZDFmYWI0NGFhMTZlIn0.Tg99OVG6RmyATW3tm-WdGEaylAkywJZhHpf7rG-BC68; x-userid=54d68770-d695-451d-9456-57d92a4bc128; mp_ea93da913ddb66b6372b89d97b1029ac_mixpanel=%7B%22distinct_id%22%3A%2254d68770-d695-451d-9456-57d92a4bc128%22%2C%22%24device_id%22%3A%22a37161b9-422c-44f1-a7d2-6e8fda8d714a%22%2C%22%24initial_referrer%22%3A%22%24direct%22%2C%22%24initial_referring_domain%22%3A%22%24direct%22%2C%22__mps%22%3A%7B%7D%2C%22__mpso%22%3A%7B%7D%2C%22__mpus%22%3A%7B%7D%2C%22__mpa%22%3A%7B%7D%2C%22__mpu%22%3A%7B%7D%2C%22__mpr%22%3A%5B%5D%2C%22__mpap%22%3A%5B%5D%2C%22%24user_id%22%3A%2254d68770-d695-451d-9456-57d92a4bc128%22%7D; _ga_8FEWB057YH=GS2.1.s1764604781$o2$g1$t1764604783$j58$l0$h0; cf_clearance=1gZcyAV6gi5EnQvDwW9RwqTFp5HuPivqkDvFueXCeFA-1764604782-1.2.1.1-49GvrEZR6YZ3uTkhwteHSZ6wUYUhJMBgRRi4xmlwTwjXddou8WhJCkbrYyATCzb85jrev8NRJcg_5qbvawH0b35pAjZw52t1sT_13Uz6T5nreRXaXA9hWfT7bMPwlgm_9kLFb0qdvfRrMYlncLpBT5ev8yHAj9FDt8ltnTek9hl1KDeJ36M3SjHh55Mbl7HX7XPjiWFr8H_Niz2VZbtYlHpPkqo2.TLrgDLbm3zfdUU"
-
-  # Account 2 - Add your second account cookies here
-  # - "paste_account_2_cookies_here"
-
+  - "sso=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzaW9uX2lkIjoiOTNjMmFhZTctYzVkYi00YzFmLWIwZDEtZmQ5MTQxYzVjOWQ5In0.RhCuq4tthRFWviChhnMwn-C8SDiNo_3YlivNqFATZUU"
   # Account 3 - Add your third account cookies here
   # - "paste_account_3_cookies_here"
 

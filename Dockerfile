@@ -17,6 +17,7 @@ COPY --from=builder /root/.local /root/.local
 
 # Copy application code
 COPY grok.py changecookie.py openairequest.py grok_client.py configs.py utils.py ngrok_manager.py ./
+COPY modules ./modules
 
 # Ensure scripts are executable
 ENV PATH=/root/.local/bin:$PATH
