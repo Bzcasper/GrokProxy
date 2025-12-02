@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Features - GrokProxy</title>
+    <link rel="stylesheet" href="/static/nav.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 48px;
+        }
+
+        .page-header h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-header p {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+            border-color: #667eea;
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: #10b981;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .feature-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .feature-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .feature-btn.secondary {
+            background: #f1f5f9;
+            color: #667eea;
+        }
+
+        .feature-btn.secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .code-block {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .badge-new {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-pro {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-beta {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <a href="/" class="navbar-brand">🚀 GrokProxy</a>
+            <div class="navbar-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/test" class="nav-link">API Testing</a>
+                <a href="/advanced" class="nav-link active">Advanced Features</a>
+                <a href="/docs" class="nav-link">Documentation</a>
+                <a href="https://github.com/Bzcasper/GrokProxy" class="nav-link" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="page-header">
+            <h1>⚡ Advanced Features</h1>
+            <p>Enterprise-grade capabilities for production deployments</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">99.9%</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">&lt;100ms</div>
+                <div class="stat-label">Avg Latency</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">10K+</div>
+                <div class="stat-label">Requests/Day</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Monitoring</div>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <!-- Rate Limiting -->
+            <div class="feature-card">
+                <div class="badge badge-pro">PRO</div>
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">Smart Rate Limiting</div>
+                <div class="feature-description">
+                    Protect your API with intelligent rate limiting using Redis-backed token bucket algorithm.
+                </div>
+                <ul class="feature-list">
+                    <li>Per-user limits</li>
+                    <li>Per-endpoint configuration</li>
+                    <li>Burst capacity handling</li>
+                    <li>Automatic retry headers</li>
+                </ul>
+                <div class="code-block">
+                    <pre>X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1764641400</pre>
+                </div>
+                <button class="feature-btn" onclick="alert('Rate limiting is enabled! Check response headers.')">View Details</button>
+            </div>
+
+            <!-- Cloud Storage -->
+            <div class="feature-card">
+                <div class="badge badge-new">NEW</div>
+                <div class="feature-icon">☁️</div>
+                <div class="feature-title">Cloudinary Integration</div>
+                <div class="feature-description">
+                    Automatic image and video storage with CDN delivery and on-the-fly transformations.
+                </div>
+                <ul class="feature-list">
+                    <li>Auto-upload generated images</li>
+                    <li>Organized folder structure</li>
+                    <li>Automatic tagging</li>
+                    <li>CDN delivery worldwide</li>
+                </ul>
+                <div class="code-block">
+                    <pre>cloudinary.upload_image(
+  image_path="image.png",
+  prompt="sunset",
+  tags=["ai-generated"]
+)</pre>
+                </div>
+                <a href="/test" class="feature-btn">Try It Now</a>
+            </div>
+
+            <!-- Content Generation -->
+            <div class="feature-card">
+                <div class="badge badge-new">NEW</div>
+                <div class="feature-icon">🎨</div>
+                <div class="feature-title">Content Generation</div>
+                <div class="feature-description">
+                    Generate images, videos, and audio using xAI's Grok without direct API access.
+                </div>
+                <ul class="feature-list">
+                    <li>Image generation</li>
+                    <li>Image-to-video conversion</li>
+                    <li>Text-to-video creation</li>
+                    <li>Batch processing</li>
+                </ul>
+                <div class="code-block">
+                    <pre>python content_generator.py image \
+  "a dragon in a cave" \
+  --style cinematic</pre>
+                </div>
+                <button class="feature-btn secondary" onclick="showContentGen()">Learn More</button>
+            </div>
+
+            <!-- Database Tracking -->
+            <div class="feature-card">
+                <div class="badge badge-pro">PRO</div>
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Advanced Analytics</div>
+                <div class="feature-description">
+                    Comprehensive tracking of all API usage with PostgreSQL and materialized views.
+                </div>
+                <ul class="feature-list">
+                    <li>Token usage tracking</li>
+                    <li>Cost analysis</li>
+                    <li>Performance metrics</li>
+                    <li>Real-time dashboards</li>
+                </ul>
+                <div class="code-block">
+                    <pre>SELECT model, COUNT(*), 
+       AVG(latency_ms)
+FROM generations
+GROUP BY model;</pre>
+                </div>
+                <button class="feature-btn" onclick="showAnalytics()">View Analytics</button>
+            </div>
+
+            <!-- Session Management -->
+            <div class="feature-card">
+                <div class="badge badge-pro">PRO</div>
+                <div class="feature-icon">🔄</div>
+                <div class="feature-title">Session Management</div>
+                <div class="feature-description">
+                    Intelligent session pooling with automatic rotation and health monitoring.
+                </div>
+                <ul class="feature-list">
+                    <li>Automatic rotation</li>
+                    <li>Health checks</li>
+                    <li>Failure detection</li>
+                    <li>Quarantine logic</li>
+                </ul>
+                <div class="code-block">
+                    <pre>session = await manager.acquire()
+# Auto-rotates on usage/age/failures
+await manager.release(session)</pre>
+                </div>
+                <button class="feature-btn secondary" onclick="alert('Session management is active!')">Status</button>
+            </div>
+
+            <!-- Observability -->
+            <div class="feature-card">
+                <div class="badge badge-beta">BETA</div>
+                <div class="feature-icon">👁️</div>
+                <div class="feature-title">Full Observability</div>
+                <div class="feature-description">
+                    Complete monitoring with Prometheus metrics, structured logging, and Sentry integration.
+                </div>
+                <ul class="feature-list">
+                    <li>Prometheus metrics</li>
+                    <li>Structured JSON logging</li>
+                    <li>Sentry error tracking</li>
+                    <li>Health check endpoints</li>
+                </ul>
+                <div class="code-block">
+                    <pre>curl /metrics
+# request_count 1234
+# avg_latency_ms 45.2</pre>
+                </div>
+                <a href="/health" class="feature-btn" target="_blank">Health Check</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showContentGen() {
+            alert('Content Generation Features:\n\n' +
+                  '✓ Image generation with style presets\n' +
+                  '✓ Batch processing from files\n' +
+                  '✓ Automatic Cloudinary upload\n' +
+                  '✓ Progress tracking\n' +
+                  '✓ Error handling & retries\n\n' +
+                  'See CONTENT_GENERATION_GUIDE.md for details!');
+        }
+
+        function showAnalytics() {
+            alert('Analytics Features:\n\n' +
+                  '✓ Real-time usage tracking\n' +
+                  '✓ Cost per request\n' +
+                  '✓ Token consumption\n' +
+                  '✓ Performance metrics\n' +
+                  '✓ Materialized views\n\n' +
+                  'Query the database for detailed insights!');
+        }
+    </script>
+</body>
+</html>

@@ -55,6 +55,15 @@ async def test_page():
     return {"error": "Test page not found"}
 
 
+@app.get("/advanced")
+async def advanced_page():
+    """Serve advanced features page."""
+    advanced_path = STATIC_DIR / "advanced.html"
+    if advanced_path.exists():
+        return FileResponse(advanced_path)
+    return {"error": "Advanced page not found"}
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
