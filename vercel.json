@@ -1,18 +1,6 @@
 {
     "version": 2,
     "name": "grokproxy",
-    "builds": [
-        {
-            "src": "api/index.py",
-            "use": "@vercel/python"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "api/index.py"
-        }
-    ],
     "env": {
         "PYTHON_VERSION": "3.12"
     },
@@ -22,7 +10,8 @@
     "functions": {
         "api/index.py": {
             "maxDuration": 60,
-            "memory": 1024
+            "memory": 1024,
+            "runtime": "python3.12"
         }
     },
     "crons": [
