@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Testing - GrokProxy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .method-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .method-get {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .method-post {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-box {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .response-box pre {
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .example-prompts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .example-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #e2e8f0;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+        
+        <div class="header">
+            <h1>🧪 API Testing</h1>
+            <p>Test all GrokProxy endpoints interactively</p>
+        </div>
+
+        <div class="grid">
+            <!-- Health Check -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="method-badge method-get">GET</span>
+                    Health Check
+                </div>
+                <button class="btn" onclick="testHealth()">Test Health Endpoint</button>
+                <div id="health-response"></div>
+            </div>
+
+            <!-- List Models -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="method-badge method-get">GET</span>
+                    List Models
+                </div>
+                <button class="btn" onclick="testModels()">Get Available Models</button>
+                <div id="models-response"></div>
+            </div>
+        </div>
+
+        <!-- Chat Completions -->
+        <div class="card">
+            <div class="card-title">
+                <span class="method-badge method-post">POST</span>
+                Chat Completions
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">API Key (Optional)</label>
+                <input type="password" class="form-input" id="api-key" placeholder="Your API key">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Model</label>
+                <input type="text" class="form-input" id="model" value="grok-3">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-textarea" id="message" placeholder="Enter your message...">Hello! Can you help me?</textarea>
+                <div class="example-prompts">
+                    <button class="example-btn" onclick="setPrompt('Explain quantum computing in simple terms')">Quantum Computing</button>
+                    <button class="example-btn" onclick="setPrompt('Write a haiku about coding')">Haiku</button>
+                    <button class="example-btn" onclick="setPrompt('What is the meaning of life?')">Philosophy</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Request Body (JSON)</label>
+                <textarea class="form-textarea" id="request-body" readonly></textarea>
+            </div>
+
+            <button class="btn" onclick="testChat()" id="chat-btn">Send Chat Request</button>
+            <div id="chat-response"></div>
+        </div>
+    </div>
+
+    <script>
+        // Update request body preview
+        function updateRequestBody() {
+            const model = document.getElementById('model').value;
+            const message = document.getElementById('message').value;
+            
+            const body = {
+                model: model,
+                messages: [
+                    {
+                        role: "user",
+                        content: message
+                    }
+                ]
+            };
+            
+            document.getElementById('request-body').value = JSON.stringify(body, null, 2);
+        }
+
+        // Set example prompt
+        function setPrompt(text) {
+            document.getElementById('message').value = text;
+            updateRequestBody();
+        }
+
+        // Test health endpoint
+        async function testHealth() {
+            const responseDiv = document.getElementById('health-response');
+            responseDiv.innerHTML = '<div class="loading"></div> Testing...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                const latency = Date.now() - startTime;
+                
+                const statusClass = response.ok ? 'status-success' : 'status-error';
+                responseDiv.innerHTML = `
+                    <div class="status-indicator ${statusClass}">
+                        ${response.status} ${response.statusText} (${latency}ms)
+                    </div>
+                    <div class="response-box">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="status-indicator status-error">Error</div>
+                    <div class="response-box">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test models endpoint
+        async function testModels() {
+            const responseDiv = document.getElementById('models-response');
+            responseDiv.innerHTML = '<div class="loading"></div> Fetching models...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch('/v1/models');
+                const data = await response.json();
+                const latency = Date.now() - startTime;
+                
+                const statusClass = response.ok ? 'status-success' : 'status-error';
+                responseDiv.innerHTML = `
+                    <div class="status-indicator ${statusClass}">
+                        ${response.status} ${response.statusText} (${latency}ms)
+                    </div>
+                    <div class="response-box">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="status-indicator status-error">Error</div>
+                    <div class="response-box">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Test chat endpoint
+        async function testChat() {
+            const responseDiv = document.getElementById('chat-response');
+            const btn = document.getElementById('chat-btn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading"></div> Sending...';
+            
+            const apiKey = document.getElementById('api-key').value;
+            const model = document.getElementById('model').value;
+            const message = document.getElementById('message').value;
+            
+            const startTime = Date.now();
+            
+            try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (apiKey) {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+                
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {
+                                role: "user",
+                                content: message
+                            }
+                        ]
+                    })
+                });
+                
+                const data = await response.json();
+                const latency = Date.now() - startTime;
+                
+                const statusClass = response.ok ? 'status-success' : 'status-error';
+                responseDiv.innerHTML = `
+                    <div class="status-indicator ${statusClass}">
+                        ${response.status} ${response.statusText} (${latency}ms)
+                    </div>
+                    <div class="response-box">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="status-indicator status-error">Error</div>
+                    <div class="response-box">
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Chat Request';
+            }
+        }
+
+        // Initialize
+        document.getElementById('model').addEventListener('input', updateRequestBody);
+        document.getElementById('message').addEventListener('input', updateRequestBody);
+        updateRequestBody();
+    </script>
+</body>
+</html>

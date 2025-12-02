@@ -46,6 +46,15 @@ async def root():
     }
 
 
+@app.get("/test")
+async def test_page():
+    """Serve API testing page."""
+    test_path = STATIC_DIR / "test.html"
+    if test_path.exists():
+        return FileResponse(test_path)
+    return {"error": "Test page not found"}
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
