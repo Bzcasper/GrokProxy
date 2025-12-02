@@ -1,0 +1,13 @@
+# Dockerfile for ngrok updater service
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir httpx pyyaml
+
+# Copy the updater script
+COPY ngrok_updater.py .
+
+# Run the updater
+CMD ["python", "ngrok_updater.py"]

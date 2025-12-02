@@ -1,0 +1,33 @@
+# Ngrok Updater Configuration
+# This service monitors your local ngrok tunnel and automatically updates
+# the Vercel environment variable when the URL changes.
+
+vercel:
+  # Get your Vercel API token from: https://vercel.com/account/tokens
+  # Create a token with "Read and Write" scope
+  api_token: "YOUR_VERCEL_API_TOKEN_HERE"
+  
+  # Get your Project ID from: https://vercel.com/[username]/[project]/settings
+  # It's shown in the project settings page
+  project_id: "YOUR_VERCEL_PROJECT_ID_HERE"
+  
+  # Team ID (optional - only needed if deploying to a team)
+  # Get from: https://vercel.com/teams/[team-name]/settings
+  team_id: ""
+  
+  # Name of the environment variable to update
+  # This will be created/updated in Vercel with the current ngrok URL
+  env_var_name: "NGROK_PROXY_URL"
+
+ngrok:
+  # Ngrok API URL (internal Docker network)
+  # Don't change this unless you modify the docker-compose.yml
+  api_url: "http://grokproxy-ngrok:4040/api/tunnels"
+  
+  # How often to check for URL changes (in seconds)
+  # 30 seconds is a good balance between responsiveness and API usage
+  poll_interval: 30
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"

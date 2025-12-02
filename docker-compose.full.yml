@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Main GrokProxy application
+  grokproxy:
+    image: grokproxy:latest
+    container_name: grokproxy
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./cookies.yaml:/app/cookies.yaml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - grokproxy-network
+
+  # Ngrok tunnel
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: grokproxy-ngrok
+    command: http grokproxy:8000 --log=stdout --log-level=info
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    depends_on:
+      - grokproxy
+    restart: unless-stopped
+    networks:
+      - grokproxy-network
+
+  # Ngrok URL updater (optional - only if you want auto Vercel updates)
+  ngrok-updater:
+    build:
+      context: .
+      dockerfile: Dockerfile.updater
+    container_name: grokproxy-ngrok-updater
+    volumes:
+      - ./ngrok_updater_config.yaml:/app/ngrok_updater_config.yaml:ro
+    environment:
+      - NGROK_UPDATER_CONFIG=/app/ngrok_updater_config.yaml
+    depends_on:
+      - ngrok
+    restart: unless-stopped
+    networks:
+      - grokproxy-network
+    # Comment out this service if you don't want automatic Vercel updates
+    profiles:
+      - with-updater
+
+networks:
+  grokproxy-network:
+    driver: bridge

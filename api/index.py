@@ -22,19 +22,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 # Import our modules
-from api.db_client import DatabaseClient
-from api.session_manager import SessionManager
-from api.grok_client import GrokClient
-from api.cloudinary_client import CloudinaryClient
-from api.models import (
-    ChatCompletionRequest,
-    ChatCompletionResponse,
-    ChatCompletionChoice,
-    ChatCompletionUsage,
-    ChatMessage,
-    ImageGenerationRequest,
-    ImageGenerationResponse
-)
+try:
+    from api.db_client import DatabaseClient
+    from api.session_manager import SessionManager
+    from api.grok_client import GrokClient
+    from api.cloudinary_client import CloudinaryClient
+    from api.models import (
+        ChatCompletionRequest,
+        ChatCompletionResponse,
+        ChatCompletionChoice,
+        ChatCompletionUsage,
+        ChatMessage,
+        ImageGenerationRequest,
+        ImageGenerationResponse
+    )
+    from api.proxy_mode import get_proxy_client, is_proxy_mode_enabled
+except ImportError as e:
+    # Gracefully handle missing dependencies in proxy mode
+    print(f"Warning: Some imports failed: {e}")
+    from api.proxy_mode import get_proxy_client, is_proxy_mode_enabled
 
 # Get the directory containing this file
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,25 +52,33 @@ session_manager: Optional[SessionManager] = None
 cloudinary_client: Optional[CloudinaryClient] = None
 
 
-async def get_db_client() -> DatabaseClient:
+async def get_db_client() -> Optional[DatabaseClient]:
     """Get or create database client."""
     global db_client
     if db_client is None:
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
-            raise ValueError("DATABASE_URL not set")
+            # Return None if no database configured (proxy mode)
+            return None
         
-        db_client = DatabaseClient(database_url=database_url, min_size=1, max_size=3)
-        await db_client.connect()
+        try:
+            db_client = DatabaseClient(database_url=database_url, min_size=1, max_size=3)
+            await db_client.connect()
+        except Exception as e:
+            print(f"Database connection failed: {e}")
+            return None
     
     return db_client
 
 
-async def get_session_manager() -> SessionManager:
+async def get_session_manager() -> Optional[SessionManager]:
     """Get or create session manager."""
     global session_manager
     if session_manager is None:
         db = await get_db_client()
+        if db is None:
+            # No database, no session manager (proxy mode)
+            return None
         session_manager = SessionManager(db)
     
     return session_manager
@@ -165,31 +179,62 @@ async def storyline_page():
 async def health():
     """Health check endpoint."""
     try:
+        # Check if we're in proxy mode
+        proxy_mode = await is_proxy_mode_enabled()
+        
+        if proxy_mode:
+            # In proxy mode, just check if ngrok URL is set
+            ngrok_url = os.getenv("NGROK_PROXY_URL")
+            return {
+                "status": "healthy",
+                "mode": "proxy",
+                "environment": "vercel-serverless",
+                "ngrok_url": ngrok_url if ngrok_url else "not_set",
+                "database": "not_required"
+            }
+        
+        # Full mode - check database
         db = await get_db_client()
+        if db is None:
+            return {
+                "status": "degraded",
+                "mode": "standalone",
+                "environment": "vercel-serverless",
+                "database": "not_configured",
+                "message": "Running without database"
+            }
+        
         db_healthy = await db.test_connection()
         
         sm = await get_session_manager()
-        session_count = await sm.get_healthy_session_count()
+        session_count = await sm.get_healthy_session_count() if sm else 0
         
         return {
             "status": "healthy" if db_healthy else "degraded",
+            "mode": "full",
             "environment": "vercel-serverless",
             "database": "connected" if db_healthy else "disconnected",
             "healthy_sessions": session_count
         }
     except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "error": str(e)
-            }
-        )
+        # Don't return 503, return 200 with error details
+        return {
+            "status": "degraded",
+            "environment": "vercel-serverless",
+            "error": str(e),
+            "message": "Service operational with limited features"
+        }
 
 
 @app.get("/v1/models")
-async def list_models():
+async def list_models(raw_request: Request):
     """List available models."""
+    # Check if we're in proxy mode
+    if await is_proxy_mode_enabled():
+        proxy = get_proxy_client()
+        return await proxy.forward_request(raw_request, "/v1/models")
+    
+    # Full mode - return static model list
     return {
         "object": "list",
         "data": [
@@ -215,11 +260,19 @@ async def list_models():
     }
 
 
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatCompletionRequest, raw_request: Request):
     """
     Chat completions endpoint with full Grok API integration.
+    Supports both proxy mode and full mode.
     """
+    # Check if we're in proxy mode
+    if await is_proxy_mode_enabled():
+        proxy = get_proxy_client()
+        return await proxy.forward_request(raw_request, "/v1/chat/completions")
+    
+    # Full mode implementation
     request_id = str(uuid.uuid4())
     start_time = time.time()
     

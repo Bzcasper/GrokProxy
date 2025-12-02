@@ -1,3 +1,6 @@
 .idea/
 __pycache__/
-venv/
+*.pyc
+.env
+ngrok_updater_config.yaml
+/
