@@ -62,8 +62,11 @@ async def get_db_client() -> Optional[DatabaseClient]:
             return None
         
         try:
-            db_client = DatabaseClient(database_url=database_url, min_size=1, max_size=3)
-            await db_client.connect()
+            # Create local instance first
+            client = DatabaseClient(database_url=database_url, min_size=1, max_size=3)
+            await client.connect()
+            # Only assign to global if successful
+            db_client = client
         except Exception as e:
             print(f"Database connection failed: {e}")
             return None

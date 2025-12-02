@@ -123,14 +123,20 @@ async def is_proxy_mode_enabled() -> bool:
     """Check if proxy mode is enabled."""
     proxy_mode = os.getenv("PROXY_MODE", "false").lower()
     ngrok_url = os.getenv("NGROK_PROXY_URL")
+    database_url = os.getenv("DATABASE_URL")
+    
+    print(f"DEBUG: Checking proxy mode. PROXY_MODE={proxy_mode}, NGROK_URL={ngrok_url}, DB_URL={'set' if database_url else 'unset'}")
     
     # Proxy mode is enabled if:
     # 1. PROXY_MODE is explicitly set to true, OR
     # 2. NGROK_PROXY_URL is set and DATABASE_URL is not set
     if proxy_mode in ["true", "1", "yes", "on"]:
+        print("DEBUG: Proxy mode enabled via PROXY_MODE env var")
         return True
     
-    if ngrok_url and not os.getenv("DATABASE_URL"):
+    if ngrok_url and not database_url:
+        print("DEBUG: Proxy mode enabled via implicit config (ngrok set, db unset)")
         return True
     
+    print("DEBUG: Proxy mode disabled")
     return False
