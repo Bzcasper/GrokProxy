@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Scene Storyline Generator - GrokProxy</title>
+    <link rel="stylesheet" href="/static/nav.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 48px;
+        }
+
+        .page-header h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-header p {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+
+        .storyline-builder {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            margin-bottom: 32px;
+        }
+
+        .scene-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 1024px) {
+            .scene-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .scene-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 24px;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .scene-card:hover {
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .scene-number {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .scene-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            margin-top: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .template-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .template-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .template-btn {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .template-btn:hover {
+            border-color: #667eea;
+            background: #f1f5f9;
+        }
+
+        .template-btn .emoji {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .output-section {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 32px;
+            display: none;
+        }
+
+        .output-section.active {
+            display: block;
+        }
+
+        .output-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .output-content {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 20px;
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .scene-preview {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            border-left: 4px solid #667eea;
+        }
+
+        .scene-preview-title {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .scene-preview-text {
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .copy-btn-output {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn-output:hover {
+            background: #059669;
+            transform: scale(1.05);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .stat-card {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <a href="/" class="navbar-brand">🚀 GrokProxy</a>
+            <div class="navbar-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/test" class="nav-link">API Testing</a>
+                <a href="/storyline" class="nav-link active">Storyline</a>
+                <a href="/advanced" class="nav-link">Advanced</a>
+                <a href="https://github.com/Bzcasper/GrokProxy" class="nav-link" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <div class="page-header">
+            <h1>🎬 3-Scene Storyline Generator</h1>
+            <p>Create compelling narratives for video and image generation</p>
+        </div>
+
+        <!-- Storyline Builder -->
+        <div class="storyline-builder">
+            <!-- Templates -->
+            <div class="template-section">
+                <div class="template-title">📚 Quick Templates</div>
+                <div class="template-grid">
+                    <button class="template-btn" onclick="loadTemplate('hero')">
+                        <span class="emoji">🦸</span> Hero's Journey
+                    </button>
+                    <button class="template-btn" onclick="loadTemplate('mystery')">
+                        <span class="emoji">🔍</span> Mystery Unfolds
+                    </button>
+                    <button class="template-btn" onclick="loadTemplate('adventure')">
+                        <span class="emoji">🗺️</span> Epic Adventure
+                    </button>
+                    <button class="template-btn" onclick="loadTemplate('romance')">
+                        <span class="emoji">💕</span> Love Story
+                    </button>
+                    <button class="template-btn" onclick="loadTemplate('scifi')">
+                        <span class="emoji">🚀</span> Sci-Fi Saga
+                    </button>
+                    <button class="template-btn" onclick="loadTemplate('horror')">
+                        <span class="emoji">👻</span> Horror Tale
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scene Cards -->
+            <div class="scene-grid">
+                <!-- Scene 1 -->
+                <div class="scene-card">
+                    <div class="scene-number">1</div>
+                    <div class="scene-title">Opening Scene</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Setting</label>
+                        <input type="text" class="form-input" id="scene1-setting" placeholder="e.g., A dark forest at midnight">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Characters</label>
+                        <input type="text" class="form-input" id="scene1-characters" placeholder="e.g., A lone traveler">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <textarea class="form-textarea" id="scene1-action" placeholder="What happens in this scene?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Mood</label>
+                        <select class="form-select" id="scene1-mood">
+                            <option value="mysterious">Mysterious</option>
+                            <option value="exciting">Exciting</option>
+                            <option value="peaceful">Peaceful</option>
+                            <option value="tense">Tense</option>
+                            <option value="joyful">Joyful</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Scene 2 -->
+                <div class="scene-card">
+                    <div class="scene-number">2</div>
+                    <div class="scene-title">Rising Action</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Setting</label>
+                        <input type="text" class="form-input" id="scene2-setting" placeholder="e.g., An ancient temple">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Characters</label>
+                        <input type="text" class="form-input" id="scene2-characters" placeholder="e.g., The traveler meets a guide">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <textarea class="form-textarea" id="scene2-action" placeholder="What happens in this scene?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Mood</label>
+                        <select class="form-select" id="scene2-mood">
+                            <option value="mysterious">Mysterious</option>
+                            <option value="exciting" selected>Exciting</option>
+                            <option value="peaceful">Peaceful</option>
+                            <option value="tense">Tense</option>
+                            <option value="joyful">Joyful</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Scene 3 -->
+                <div class="scene-card">
+                    <div class="scene-number">3</div>
+                    <div class="scene-title">Resolution</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Setting</label>
+                        <input type="text" class="form-input" id="scene3-setting" placeholder="e.g., Mountain peak at sunrise">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Characters</label>
+                        <input type="text" class="form-input" id="scene3-characters" placeholder="e.g., The transformed hero">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <textarea class="form-textarea" id="scene3-action" placeholder="What happens in this scene?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Mood</label>
+                        <select class="form-select" id="scene3-mood">
+                            <option value="mysterious">Mysterious</option>
+                            <option value="exciting">Exciting</option>
+                            <option value="peaceful">Peaceful</option>
+                            <option value="tense">Tense</option>
+                            <option value="joyful" selected>Joyful</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="generateStoryline()">
+                    🎬 Generate Storyline
+                </button>
+                <button class="btn btn-secondary" onclick="generatePrompts()">
+                    🎨 Generate Image Prompts
+                </button>
+                <button class="btn btn-secondary" onclick="clearAll()">
+                    🔄 Clear All
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="word-count">0</div>
+                    <div class="stat-label">Total Words</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Scenes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="char-count">0</div>
+                    <div class="stat-label">Characters</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="output-section" id="output-section">
+            <div class="output-title">📝 Generated Output</div>
+            <div class="output-content" id="output-content"></div>
+            <button class="copy-btn-output" onclick="copyOutput()">📋 Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        // Templates
+        const templates = {
+            hero: {
+                scene1: {
+                    setting: "A quiet village at dawn",
+                    characters: "A young farmer dreaming of adventure",
+                    action: "The protagonist discovers a mysterious artifact in their field that glows with ancient power",
+                    mood: "mysterious"
+                },
+                scene2: {
+                    setting: "A dangerous mountain pass",
+                    characters: "The hero faces their first trial",
+                    action: "Confronting a fierce guardian, the hero must prove their worth through courage and wit",
+                    mood: "tense"
+                },
+                scene3: {
+                    setting: "The summit bathed in golden light",
+                    characters: "The transformed hero",
+                    action: "Having overcome all challenges, the hero claims their destiny and returns home victorious",
+                    mood: "joyful"
+                }
+            },
+            mystery: {
+                scene1: {
+                    setting: "A foggy London street, 1920s",
+                    characters: "A detective receives an urgent letter",
+                    action: "A cryptic message arrives, hinting at a crime that hasn't happened yet",
+                    mood: "mysterious"
+                },
+                scene2: {
+                    setting: "An abandoned mansion",
+                    characters: "The detective and suspects gather",
+                    action: "Clues begin to connect as the detective unravels a web of deception",
+                    mood: "tense"
+                },
+                scene3: {
+                    setting: "The library, midnight",
+                    characters: "All suspects present",
+                    action: "The detective reveals the culprit in a dramatic confrontation",
+                    mood: "exciting"
+                }
+            },
+            adventure: {
+                scene1: {
+                    setting: "A tropical island beach",
+                    characters: "Treasure hunters land ashore",
+                    action: "The crew discovers an ancient map leading to legendary treasure",
+                    mood: "exciting"
+                },
+                scene2: {
+                    setting: "Deep jungle ruins",
+                    characters: "The team navigates deadly traps",
+                    action: "Facing ancient guardians and solving puzzles, they press deeper into the temple",
+                    mood: "tense"
+                },
+                scene3: {
+                    setting: "The treasure chamber",
+                    characters: "The victorious adventurers",
+                    action: "They find not gold, but knowledge that will change the world",
+                    mood: "joyful"
+                }
+            },
+            romance: {
+                scene1: {
+                    setting: "A bustling coffee shop",
+                    characters: "Two strangers",
+                    action: "An accidental collision leads to a chance meeting and instant connection",
+                    mood: "joyful"
+                },
+                scene2: {
+                    setting: "A rainy park bench",
+                    characters: "The couple faces a misunderstanding",
+                    action: "Past wounds and miscommunication threaten to tear them apart",
+                    mood: "tense"
+                },
+                scene3: {
+                    setting: "Under the stars",
+                    characters: "The reunited lovers",
+                    action: "Honest conversation and vulnerability lead to a deeper, truer love",
+                    mood: "peaceful"
+                }
+            },
+            scifi: {
+                scene1: {
+                    setting: "A space station orbiting Mars",
+                    characters: "A scientist makes a breakthrough",
+                    action: "Discovery of an alien signal changes everything humanity thought they knew",
+                    mood: "mysterious"
+                },
+                scene2: {
+                    setting: "The alien vessel",
+                    characters: "First contact team",
+                    action: "Boarding the mysterious ship, they encounter technology beyond comprehension",
+                    mood: "exciting"
+                },
+                scene3: {
+                    setting: "Earth, transformed",
+                    characters: "Humanity's new allies",
+                    action: "The alliance ushers in a new era of peace and exploration",
+                    mood: "joyful"
+                }
+            },
+            horror: {
+                scene1: {
+                    setting: "An isolated cabin in the woods",
+                    characters: "A group of friends on vacation",
+                    action: "Strange noises in the night and an ominous warning from a local",
+                    mood: "mysterious"
+                },
+                scene2: {
+                    setting: "The dark basement",
+                    characters: "The terrified survivors",
+                    action: "One by one, they realize they're not alone and something is hunting them",
+                    mood: "dark"
+                },
+                scene3: {
+                    setting: "Dawn breaks over the cabin",
+                    characters: "The sole survivor",
+                    action: "Escaping into the morning light, forever changed by the nightmare",
+                    mood: "tense"
+                }
+            }
+        };
+
+        function loadTemplate(type) {
+            const template = templates[type];
+            if (!template) return;
+
+            // Load Scene 1
+            document.getElementById('scene1-setting').value = template.scene1.setting;
+            document.getElementById('scene1-characters').value = template.scene1.characters;
+            document.getElementById('scene1-action').value = template.scene1.action;
+            document.getElementById('scene1-mood').value = template.scene1.mood;
+
+            // Load Scene 2
+            document.getElementById('scene2-setting').value = template.scene2.setting;
+            document.getElementById('scene2-characters').value = template.scene2.characters;
+            document.getElementById('scene2-action').value = template.scene2.action;
+            document.getElementById('scene2-mood').value = template.scene2.mood;
+
+            // Load Scene 3
+            document.getElementById('scene3-setting').value = template.scene3.setting;
+            document.getElementById('scene3-characters').value = template.scene3.characters;
+            document.getElementById('scene3-action').value = template.scene3.action;
+            document.getElementById('scene3-mood').value = template.scene3.mood;
+
+            updateStats();
+        }
+
+        function generateStoryline() {
+            const scenes = [];
+            
+            for (let i = 1; i <= 3; i++) {
+                const setting = document.getElementById(`scene${i}-setting`).value;
+                const characters = document.getElementById(`scene${i}-characters`).value;
+                const action = document.getElementById(`scene${i}-action`).value;
+                const mood = document.getElementById(`scene${i}-mood`).value;
+                
+                if (!setting || !characters || !action) {
+                    alert(`Please fill in all fields for Scene ${i}`);
+                    return;
+                }
+                
+                scenes.push({ setting, characters, action, mood });
+            }
+
+            let output = "=== 3-SCENE STORYLINE ===\n\n";
+            
+            scenes.forEach((scene, index) => {
+                const sceneTitle = index === 0 ? "OPENING SCENE" : index === 1 ? "RISING ACTION" : "RESOLUTION";
+                output += `SCENE ${index + 1}: ${sceneTitle}\n`;
+                output += `${'='.repeat(50)}\n\n`;
+                output += `Setting: ${scene.setting}\n`;
+                output += `Characters: ${scene.characters}\n`;
+                output += `Mood: ${scene.mood.toUpperCase()}\n\n`;
+                output += `Action:\n${scene.action}\n\n`;
+                output += `${'='.repeat(50)}\n\n`;
+            });
+
+            document.getElementById('output-content').textContent = output;
+            document.getElementById('output-section').classList.add('active');
+            document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generatePrompts() {
+            const scenes = [];
+            
+            for (let i = 1; i <= 3; i++) {
+                const setting = document.getElementById(`scene${i}-setting`).value;
+                const characters = document.getElementById(`scene${i}-characters`).value;
+                const action = document.getElementById(`scene${i}-action`).value;
+                const mood = document.getElementById(`scene${i}-mood`).value;
+                
+                if (!setting || !characters || !action) {
+                    alert(`Please fill in all fields for Scene ${i}`);
+                    return;
+                }
+                
+                scenes.push({ setting, characters, action, mood });
+            }
+
+            let output = "=== IMAGE GENERATION PROMPTS ===\n\n";
+            
+            scenes.forEach((scene, index) => {
+                output += `Scene ${index + 1} Prompt:\n`;
+                output += `"${scene.setting}, ${scene.characters}, ${scene.action}, ${scene.mood} atmosphere, cinematic lighting, highly detailed, 8k"\n\n`;
+                
+                output += `Command:\n`;
+                output += `python content_generator.py image "${scene.setting}, ${scene.characters}, ${scene.mood} mood" --style cinematic\n\n`;
+                output += `${'='.repeat(50)}\n\n`;
+            });
+
+            document.getElementById('output-content').textContent = output;
+            document.getElementById('output-section').classList.add('active');
+            document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearAll() {
+            if (confirm('Clear all fields?')) {
+                for (let i = 1; i <= 3; i++) {
+                    document.getElementById(`scene${i}-setting`).value = '';
+                    document.getElementById(`scene${i}-characters`).value = '';
+                    document.getElementById(`scene${i}-action`).value = '';
+                }
+                document.getElementById('output-section').classList.remove('active');
+                updateStats();
+            }
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('output-content').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#10b981';
+                }, 2000);
+            });
+        }
+
+        function updateStats() {
+            let totalWords = 0;
+            let totalChars = 0;
+            
+            for (let i = 1; i <= 3; i++) {
+                const setting = document.getElementById(`scene${i}-setting`).value;
+                const characters = document.getElementById(`scene${i}-characters`).value;
+                const action = document.getElementById(`scene${i}-action`).value;
+                
+                const text = `${setting} ${characters} ${action}`;
+                totalWords += text.split(/\s+/).filter(w => w.length > 0).length;
+                totalChars += text.length;
+            }
+            
+            document.getElementById('word-count').textContent = totalWords;
+            document.getElementById('char-count').textContent = totalChars;
+        }
+
+        // Update stats on input
+        document.querySelectorAll('.form-input, .form-textarea').forEach(el => {
+            el.addEventListener('input', updateStats);
+        });
+
+        // Initialize
+        updateStats();
+    </script>
+</body>
+</html>

@@ -64,6 +64,15 @@ async def advanced_page():
     return {"error": "Advanced page not found"}
 
 
+@app.get("/storyline")
+async def storyline_page():
+    """Serve 3-scene storyline generator."""
+    storyline_path = STATIC_DIR / "storyline.html"
+    if storyline_path.exists():
+        return FileResponse(storyline_path)
+    return {"error": "Storyline page not found"}
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
