@@ -1,5 +1,6 @@
 """
 Minimal Vercel serverless entry point for GrokProxy.
+Last updated: 2025-12-01 18:20 PST
 """
 
 from fastapi import FastAPI
