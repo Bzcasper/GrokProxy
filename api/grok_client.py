@@ -9,6 +9,22 @@ from typing import Dict, Any, Optional, AsyncIterator, List
 import time
 
 
+# Custom exceptions for cookie rotation
+class RateLimitException(Exception):
+    """Raised when rate limit is hit."""
+    pass
+
+
+class AuthenticationException(Exception):
+    """Raised when authentication fails."""
+    pass
+
+
+class CookieExpiredException(Exception):
+    """Raised when cookie has expired."""
+    pass
+
+
 class GrokClient:
     """Client for Grok Web Interface interactions."""
     
@@ -81,14 +97,46 @@ class GrokClient:
         
         try:
             async with self.client.stream("POST", self.GROK_URL, json=payload) as response:
+                # Check for error status codes
+                if response.status_code == 429:
+                    error_text = await response.aread()
+                    raise RateLimitException(f"Rate limit exceeded: {error_text.decode('utf-8', errors='ignore')}")
+                
+                if response.status_code in (401, 403):
+                    error_text = await response.aread()
+                    raise AuthenticationException(f"Authentication failed ({response.status_code}): {error_text.decode('utf-8', errors='ignore')}")
+                
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    raise Exception(f"Grok Web API error: {response.status_code} - {error_text.decode('utf-8', errors='ignore')}")
+                    error_msg = error_text.decode('utf-8', errors='ignore')
+                    
+                    # Check for rate limit in message
+                    if "rate limit" in error_msg.lower():
+                        raise RateLimitException(f"Rate limit detected: {error_msg}")
+                    
+                    # Check for authentication issues
+                    if any(keyword in error_msg.lower() for keyword in ["unauthorized", "expired", "invalid cookie", "authentication"]):
+                        raise AuthenticationException(f"Authentication error: {error_msg}")
+                    
+                    raise Exception(f"Grok Web API error: {response.status_code} - {error_msg}")
                 
                 async for line in response.aiter_lines():
                     if line:
                         try:
                             data = json.loads(line)
+                            
+                            # Check for errors in the response data
+                            if "error" in data:
+                                error_info = data["error"]
+                                error_msg = str(error_info)
+                                
+                                if "rate" in error_msg.lower():
+                                    raise RateLimitException(f"Rate limit in response: {error_msg}")
+                                if any(keyword in error_msg.lower() for keyword in ["unauthorized", "expired", "invalid"]):
+                                    raise AuthenticationException(f"Auth error in response: {error_msg}")
+                                
+                                raise Exception(f"Error in response: {error_msg}")
+                            
                             token = data.get("result", {}).get("response", {}).get("token")
                             if token:
                                 full_response_text += token
@@ -117,7 +165,17 @@ class GrokClient:
                 }
             }
             
+        except (RateLimitException, AuthenticationException, CookieExpiredException):
+            # Re-raise our custom exceptions
+            raise
         except Exception as e:
+            # Check if the error message contains clues
+            error_str = str(e).lower()
+            if "rate" in error_str and "limit" in error_str:
+                raise RateLimitException(f"Rate limit detected: {str(e)}")
+            if any(keyword in error_str for keyword in ["unauthorized", "expired", "authentication", "cookie"]):
+                raise AuthenticationException(f"Authentication issue: {str(e)}")
+            
             raise Exception(f"Request failed: {str(e)}")
 
     async def chat_completion_stream(
@@ -135,20 +193,46 @@ class GrokClient:
         
         try:
             async with self.client.stream("POST", self.GROK_URL, json=payload) as response:
+                # Check for error status codes
+                if response.status_code == 429:
+                    error_text = await response.aread()
+                    raise RateLimitException(f"Rate limit exceeded: {error_text.decode('utf-8', errors='ignore')}")
+                
+                if response.status_code in (401, 403):
+                    error_text = await response.aread()
+                    raise AuthenticationException(f"Authentication failed ({response.status_code}): {error_text.decode('utf-8', errors='ignore')}")
+                
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    yield json.dumps({
-                        "error": {
-                            "message": f"Grok Web API error: {response.status_code} - {error_text.decode('utf-8', errors='ignore')}",
-                            "type": "api_error"
-                        }
-                    })
-                    return
+                    error_msg = error_text.decode('utf-8', errors='ignore')
+                    
+                    # Check for rate limit in message
+                    if "rate limit" in error_msg.lower():
+                        raise RateLimitException(f"Rate limit detected: {error_msg}")
+                    
+                    # Check for authentication issues
+                    if any(keyword in error_msg.lower() for keyword in ["unauthorized", "expired", "invalid cookie", "authentication"]):
+                        raise AuthenticationException(f"Authentication error: {error_msg}")
+                    
+                    raise Exception(f"Grok Web API error: {response.status_code} - {error_msg}")
 
                 async for line in response.aiter_lines():
                     if line:
                         try:
                             data = json.loads(line)
+                            
+                            # Check for errors in the response data
+                            if "error" in data:
+                                error_info = data["error"]
+                                error_msg = str(error_info)
+                                
+                                if "rate" in error_msg.lower():
+                                    raise RateLimitException(f"Rate limit in response: {error_msg}")
+                                if any(keyword in error_msg.lower() for keyword in ["unauthorized", "expired", "invalid"]):
+                                    raise AuthenticationException(f"Auth error in response: {error_msg}")
+                                
+                                raise Exception(f"Error in response: {error_msg}")
+                            
                             token = data.get("result", {}).get("response", {}).get("token")
                             if token:
                                 # Format as OpenAI-compatible SSE
@@ -169,13 +253,18 @@ class GrokClient:
                         except json.JSONDecodeError:
                             continue
                             
+        except (RateLimitException, AuthenticationException, CookieExpiredException):
+            # Re-raise our custom exceptions
+            raise
         except Exception as e:
-            yield json.dumps({
-                "error": {
-                    "message": f"Stream failed: {str(e)}",
-                    "type": "stream_error"
-                }
-            })
+            # Check if the error message contains clues
+            error_str = str(e).lower()
+            if "rate" in error_str and "limit" in error_str:
+                raise RateLimitException(f"Rate limit detected: {str(e)}")
+            if any(keyword in error_str for keyword in ["unauthorized", "expired", "authentication", "cookie"]):
+                raise AuthenticationException(f"Authentication issue: {str(e)}")
+            
+            raise Exception(f"Stream failed: {str(e)}")
 
     async def generate_image(
         self,

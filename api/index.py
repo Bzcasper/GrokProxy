@@ -10,6 +10,7 @@ from typing import Optional
 import time
 import uuid
 import json
+import logging
 
 # Add parent directory to path for imports
 root_dir = Path(__file__).parent.parent
@@ -24,8 +25,9 @@ from contextlib import asynccontextmanager
 # Import our modules
 from api.db_client import DatabaseClient
 from api.session_manager import SessionManager
-from api.grok_client import GrokClient
+from api.grok_client import GrokClient, RateLimitException, AuthenticationException, CookieExpiredException
 from api.cloudinary_client import CloudinaryClient
+from api.cookie_manager import CookieManager
 from api.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -44,6 +46,7 @@ STATIC_DIR = BASE_DIR / "static"
 db_client: Optional[DatabaseClient] = None
 session_manager: Optional[SessionManager] = None
 cloudinary_client: Optional[CloudinaryClient] = None
+cookie_manager: Optional[CookieManager] = None
 
 
 async def get_db_client() -> Optional[DatabaseClient]:
@@ -87,6 +90,17 @@ def get_cloudinary_client() -> CloudinaryClient:
         cloudinary_client = CloudinaryClient()
     
     return cloudinary_client
+
+
+def get_cookie_manager() -> CookieManager:
+    """Get or create Cookie manager."""
+    global cookie_manager
+    if cookie_manager is None:
+        # Get failure threshold from env, default to 3
+        failure_threshold = int(os.getenv("COOKIE_FAILURE_THRESHOLD", "3"))
+        cookie_manager = CookieManager(failure_threshold=failure_threshold)
+    
+    return cookie_manager
 
 
 @asynccontextmanager
@@ -175,15 +189,24 @@ async def storyline_page():
 async def health():
     """Health check endpoint."""
     try:
-        # Full mode - check database
+        # Get cookie manager stats
+        cm = get_cookie_manager()
+        cookie_stats = {
+            "total_cookies": cm.get_total_count(),
+            "healthy_cookies": cm.get_healthy_count(),
+            "rotation_enabled": os.getenv("COOKIE_ROTATION_ENABLED", "true").lower() == "true"
+        }
+        
+        # Check if database is configured
         db = await get_db_client()
         if db is None:
             return {
-                "status": "degraded",
-                "mode": "standalone",
+                "status": "healthy",
+                "mode": "cookieonly",
                 "environment": "vercel-serverless",
                 "database": "not_configured",
-                "message": "Running without database"
+                "cookies": cookie_stats,
+                "message": "Running with cookie-based rotation only"
             }
         
         db_healthy = await db.test_connection()
@@ -196,15 +219,21 @@ async def health():
             "mode": "full",
             "environment": "vercel-serverless",
             "database": "connected" if db_healthy else "disconnected",
+            "cookies": cookie_stats,
             "healthy_sessions": session_count
         }
     except Exception as e:
         # Don't return 503, return 200 with error details
+        cm = get_cookie_manager()
         return {
             "status": "degraded",
             "environment": "vercel-serverless",
             "error": str(e),
-            "message": "Service operational with limited features"
+            "cookies": {
+                "total_cookies": cm.get_total_count(),
+                "healthy_cookies": cm.get_healthy_count()
+            },
+            "message": "Service operational with cookie rotation"
         }
 
 
@@ -241,112 +270,187 @@ async def list_models(raw_request: Request):
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatCompletionRequest, raw_request: Request):
     """
-    Chat completions endpoint with full Grok API integration.
+    Chat completions endpoint with automatic cookie rotation.
     """
-    # Full mode implementation
     request_id = str(uuid.uuid4())
     start_time = time.time()
     
-    try:
-        # Get session manager and acquire session
-        sm = await get_session_manager()
-        session = await sm.acquire_session()
-        
-        if not session:
-            raise HTTPException(
-                status_code=503,
-                detail="No available sessions. Please try again later."
-            )
-        
-        # Create Grok client with session cookies
-        grok_client = GrokClient(session['cookies'], session.get('user_agent'))
-        
+    # Get cookie manager
+    cm = get_cookie_manager()
+    max_retries = cm.get_total_count()
+    
+    if max_retries == 0:
+        raise HTTPException(
+            status_code=503,
+            detail="No cookies configured. Please set COOKIE_1 environment variable."
+        )
+    
+    # Convert Pydantic messages to dicts
+    messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+    
+    last_error = None
+    
+    # Try each cookie
+    for attempt in range(max_retries):
         try:
-            # Convert Pydantic messages to dicts
-            messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+            # Get next available cookie
+            cookie_info = cm.get_next_cookie()
             
-            # Call Grok API
-            if request.stream:
-                # Streaming response
-                async def generate():
+            # Create Grok client with this cookie
+            grok_client = GrokClient(
+                session_cookies=cookie_info["cookies_dict"],
+                user_agent=cookie_info["user_agent"]
+            )
+            
+            try:
+                if request.stream:
+                    # Streaming response
+                    async def generate():
+                        try:
+                            async for chunk in grok_client.chat_completion_stream(
+                                messages=messages,
+                                model=request.model,
+                                temperature=request.temperature,
+                                max_tokens=request.max_tokens
+                            ):
+                                yield f"data: {chunk}\n\n"
+                            yield "data: [DONE]\n\n"
+                            
+                            # Mark success
+                            cm.mark_cookie_success(cookie_info["index"])
+                            
+                        except (RateLimitException, AuthenticationException) as e:
+                            # These will be caught by outer handler
+                            raise
+                        finally:
+                            await grok_client.close()
+                    
+                    return StreamingResponse(
+                        generate(),
+                        media_type="text/event-stream"
+                    )
+                else:
+                    # Non-streaming response
+                    response = await grok_client.chat_completion(
+                        messages=messages,
+                        model=request.model,
+                        temperature=request.temperature,
+                        max_tokens=request.max_tokens,
+                        stream=False
+                    )
+                    
+                    await grok_client.close()
+                    
+                    # Mark cookie as successful
+                    cm.mark_cookie_success(cookie_info["index"])
+                    
+                    # Calculate latency
+                    latency_ms = int((time.time() - start_time) * 1000)
+                    
+                    # Log to database (optional)
                     try:
-                        async for chunk in grok_client.chat_completion_stream(
-                            messages=messages,
-                            model=request.model,
-                            temperature=request.temperature,
-                            max_tokens=request.max_tokens
-                        ):
-                            yield f"data: {chunk}\n\n"
-                        yield "data: [DONE]\n\n"
-                    finally:
-                        await grok_client.close()
-                        await sm.release_session(session['id'], success=True)
-                
-                return StreamingResponse(
-                    generate(),
-                    media_type="text/event-stream"
-                )
-            else:
-                # Non-streaming response
-                response = await grok_client.chat_completion(
-                    messages=messages,
-                    model=request.model,
-                    temperature=request.temperature,
-                    max_tokens=request.max_tokens,
-                    stream=False
-                )
-                
+                        db = await get_db_client()
+                        if db:
+                            await db.insert_generation(
+                                request_id=request_id,
+                                provider="grok",
+                                model=request.model,
+                                prompt=messages[0]['content'] if messages else "",
+                                status=200,
+                                latency_ms=latency_ms,
+                                session_id=None,  # No session ID in cookie mode
+                                response_text=response.get('choices', [{}])[0].get('message', {}).get('content'),
+                                response_tokens=response.get('usage', {}).get('completion_tokens'),
+                                prompt_tokens=response.get('usage', {}).get('prompt_tokens'),
+                                response_raw=response
+                            )
+                    except Exception as db_error:
+                        # Database logging is optional, don't fail request
+                        logger.warning(f"Failed to log to database: {db_error}")
+                    
+                    return response
+                    
+            except RateLimitException as e:
+                # Rate limit hit - mark cookie failed and try next
+                cm.mark_cookie_failed(cookie_info["index"], "rate_limit")
+                last_error = str(e)
+                logger.warning(f"Cookie {cookie_info['index']} hit rate limit: {e}")
                 await grok_client.close()
                 
-                # Calculate latency
-                latency_ms = int((time.time() - start_time) * 1000)
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"All cookies exhausted due to rate limits: {last_error}"
+                    )
                 
-                # Log to database
-                db = await get_db_client()
-                await db.insert_generation(
-                    request_id=request_id,
-                    provider="grok",
-                    model=request.model,
-                    prompt=messages[0]['content'] if messages else "",
-                    status=200,
-                    latency_ms=latency_ms,
-                    session_id=session['id'],
-                    response_text=response.get('choices', [{}])[0].get('message', {}).get('content'),
-                    response_tokens=response.get('usage', {}).get('completion_tokens'),
-                    prompt_tokens=response.get('usage', {}).get('prompt_tokens'),
-                    response_raw=response
-                )
+                # Otherwise continue to next cookie
+                continue
                 
-                # Release session
-                await sm.release_session(session['id'], success=True)
+            except AuthenticationException as e:
+                # Auth failed - mark cookie failed and try next
+                cm.mark_cookie_failed(cookie_info["index"], "auth_failed")
+                last_error = str(e)
+                logger.warning(f"Cookie {cookie_info['index']} auth failed: {e}")
+                await grok_client.close()
                 
-                return response
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=401,
+                        detail=f"All cookies failed authentication: {last_error}"
+                    )
                 
+                # Otherwise continue to next cookie
+                continue
+                
+            except CookieExpiredException as e:
+                # Cookie expired - mark failed and try next
+                cm.mark_cookie_failed(cookie_info["index"], "expired")
+                last_error = str(e)
+                logger.warning(f"Cookie {cookie_info['index']} expired: {e}")
+                await grok_client.close()
+                
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=401,
+                        detail=f"All cookies expired: {last_error}"
+                    )
+                
+                # Otherwise continue to next cookie
+                continue
+                
+            except Exception as e:
+                # Other error - mark as failed but with unknown error type
+                cm.mark_cookie_failed(cookie_info["index"], "unknown")
+                last_error = str(e)
+                logger.error(f"Cookie {cookie_info['index']} unexpected error: {e}")
+                await grok_client.close()
+                
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"All cookies failed: {last_error}"
+                    )
+                
+                # Otherwise continue to next cookie
+                continue
+                
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
         except Exception as e:
-            # Release session with failure
-            await sm.release_session(session['id'], success=False)
-            raise e
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Log error to database
-        latency_ms = int((time.time() - start_time) * 1000)
-        try:
-            db = await get_db_client()
-            await db.insert_generation(
-                request_id=request_id,
-                provider="grok",
-                model=request.model,
-                prompt=request.messages[0].content if request.messages else "",
-                status=500,
-                latency_ms=latency_ms,
-                error_message=str(e)
-            )
-        except:
-            pass
-        
-        raise HTTPException(status_code=500, detail=str(e))
+            # Unexpected error in retry logic itself
+            logger.error(f"Unexpected error in retry logic: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    # Should never reach here, but just in case
+    raise HTTPException(
+        status_code=503,
+        detail="Failed to complete request after all retries"
+    )
 
 
 @app.post("/v1/images/generations")
@@ -444,6 +548,7 @@ async def generate_image(request: ImageGenerationRequest):
 # ADMIN ENDPOINTS
 # ============================================================================
 
+
 @app.get("/admin/sessions")
 async def list_sessions():
     """List all sessions (admin only)."""
@@ -464,3 +569,23 @@ async def list_generations():
         return {"generations": generations}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/admin/cookies")
+async def cookie_statistics():
+    """Get detailed cookie statistics (admin only)."""
+    try:
+        cm = get_cookie_manager()
+        return {
+            "total_cookies": cm.get_total_count(),
+            "healthy_cookies": cm.get_healthy_count(),
+            "rotation_enabled": os.getenv("COOKIE_ROTATION_ENABLED", "true").lower() == "true",
+            "failure_threshold": int(os.getenv("COOKIE_FAILURE_THRESHOLD", "3")),
+            "cookies": cm.get_cookie_stats()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Setup logger
+logger = logging.getLogger(__name__)
