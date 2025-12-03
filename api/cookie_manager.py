@@ -117,15 +117,17 @@ class CookieManager:
                 if cookie.healthy:
                     cookie.last_used = datetime.utcnow()
                     
-                    # Parse cookie value to extract key-value
-                    # Expected format: "sso=VALUE"
+                    # Parse cookie value to extract key-value pairs
+                    # Expected format: "sso=VALUE; cf_clearance=VALUE; ..."
                     cookies_dict = {}
-                    if "=" in cookie.cookie_value:
-                        key, value = cookie.cookie_value.split("=", 1)
-                        cookies_dict[key.strip()] = value.strip()
-                    else:
-                        # Assume it's just the SSO value
-                        cookies_dict["sso"] = cookie.cookie_value.strip()
+                    for cookie_pair in cookie.cookie_value.split(";"):
+                        cookie_pair = cookie_pair.strip()
+                        if "=" in cookie_pair:
+                            key, value = cookie_pair.split("=", 1)
+                            cookies_dict[key.strip()] = value.strip()
+                        else:
+                            # If no =, assume it's sso value
+                            cookies_dict["sso"] = cookie_pair
                     
                     return {
                         "index": cookie.index,
@@ -144,11 +146,14 @@ class CookieManager:
                 cookie.last_used = datetime.utcnow()
                 
                 cookies_dict = {}
-                if "=" in cookie.cookie_value:
-                    key, value = cookie.cookie_value.split("=", 1)
-                    cookies_dict[key.strip()] = value.strip()
-                else:
-                    cookies_dict["sso"] = cookie.cookie_value.strip()
+                for cookie_pair in cookie.cookie_value.split(";"):
+                    cookie_pair = cookie_pair.strip()
+                    if "=" in cookie_pair:
+                        key, value = cookie_pair.split("=", 1)
+                        cookies_dict[key.strip()] = value.strip()
+                    else:
+                        # If no =, assume it's sso value
+                        cookies_dict["sso"] = cookie_pair
                 
                 return {
                     "index": cookie.index,
