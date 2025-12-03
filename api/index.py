@@ -11,6 +11,7 @@ import time
 import uuid
 import json
 import logging
+import re
 
 # Add parent directory to path for imports
 root_dir = Path(__file__).parent.parent
@@ -487,8 +488,9 @@ async def generate_image(request: ImageGenerationRequest):
             if 'choices' in response and response['choices']:
                 content = response['choices'][0].get('message', {}).get('content', '')
                 # Parse image URL from content (format depends on Grok API)
-                # For now, return the response as-is
-                pass
+                urls = re.findall(r'https?://[^\s]+', content)
+                if urls:
+                    image_url = urls[0]
             
             # Upload to Cloudinary if we have an image URL
             cloudinary_url = None
@@ -527,11 +529,9 @@ async def generate_image(request: ImageGenerationRequest):
                 "created": int(time.time()),
                 "data": [
                     {
-                        "url": image_url or "pending",
-                        "cloudinary_url": cloudinary_url
+                        "url": cloudinary_url or image_url or "pending"
                     }
-                ],
-                "response": response
+                ]
             }
             
         except Exception as e:
