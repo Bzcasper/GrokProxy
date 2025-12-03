@@ -22,25 +22,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 # Import our modules
-try:
-    from api.db_client import DatabaseClient
-    from api.session_manager import SessionManager
-    from api.grok_client import GrokClient
-    from api.cloudinary_client import CloudinaryClient
-    from api.models import (
-        ChatCompletionRequest,
-        ChatCompletionResponse,
-        ChatCompletionChoice,
-        ChatCompletionUsage,
-        ChatMessage,
-        ImageGenerationRequest,
-        ImageGenerationResponse
-    )
-    from api.proxy_mode import get_proxy_client, is_proxy_mode_enabled
-except ImportError as e:
-    # Gracefully handle missing dependencies in proxy mode
-    print(f"Warning: Some imports failed: {e}")
-    from api.proxy_mode import get_proxy_client, is_proxy_mode_enabled
+from api.db_client import DatabaseClient
+from api.session_manager import SessionManager
+from api.grok_client import GrokClient
+from api.cloudinary_client import CloudinaryClient
+from api.models import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    ChatCompletionChoice,
+    ChatCompletionUsage,
+    ChatMessage,
+    ImageGenerationRequest,
+    ImageGenerationResponse
+)
 
 # Get the directory containing this file
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -58,7 +52,7 @@ async def get_db_client() -> Optional[DatabaseClient]:
     if db_client is None:
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
-            # Return None if no database configured (proxy mode)
+            print("Warning: DATABASE_URL not set")
             return None
         
         try:
@@ -80,7 +74,6 @@ async def get_session_manager() -> Optional[SessionManager]:
     if session_manager is None:
         db = await get_db_client()
         if db is None:
-            # No database, no session manager (proxy mode)
             return None
         session_manager = SessionManager(db)
     
@@ -182,20 +175,6 @@ async def storyline_page():
 async def health():
     """Health check endpoint."""
     try:
-        # Check if we're in proxy mode
-        proxy_mode = await is_proxy_mode_enabled()
-        
-        if proxy_mode:
-            # In proxy mode, just check if ngrok URL is set
-            ngrok_url = os.getenv("NGROK_PROXY_URL")
-            return {
-                "status": "healthy",
-                "mode": "proxy",
-                "environment": "vercel-serverless",
-                "ngrok_url": ngrok_url if ngrok_url else "not_set",
-                "database": "not_required"
-            }
-        
         # Full mode - check database
         db = await get_db_client()
         if db is None:
@@ -232,11 +211,6 @@ async def health():
 @app.get("/v1/models")
 async def list_models(raw_request: Request):
     """List available models."""
-    # Check if we're in proxy mode
-    if await is_proxy_mode_enabled():
-        proxy = get_proxy_client()
-        return await proxy.forward_request(raw_request, "/v1/models")
-    
     # Full mode - return static model list
     return {
         "object": "list",
@@ -268,13 +242,7 @@ async def list_models(raw_request: Request):
 async def chat_completions(request: ChatCompletionRequest, raw_request: Request):
     """
     Chat completions endpoint with full Grok API integration.
-    Supports both proxy mode and full mode.
     """
-    # Check if we're in proxy mode
-    if await is_proxy_mode_enabled():
-        proxy = get_proxy_client()
-        return await proxy.forward_request(raw_request, "/v1/chat/completions")
-    
     # Full mode implementation
     request_id = str(uuid.uuid4())
     start_time = time.time()
@@ -291,7 +259,7 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
             )
         
         # Create Grok client with session cookies
-        grok_client = GrokClient(session['cookies'])
+        grok_client = GrokClient(session['cookies'], session.get('user_agent'))
         
         try:
             # Convert Pydantic messages to dicts
