@@ -5,3 +5,5 @@ __pycache__/
 .env.local.secret
 ngrok_updater_config.yaml
 /
+.vercel
+.env*.local

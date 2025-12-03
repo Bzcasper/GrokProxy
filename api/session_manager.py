@@ -39,14 +39,16 @@ class SessionManager:
     async def release_session(self, session_id: str, success: bool = True):
         """
         Release a session after use.
-        
+
         Args:
             session_id: Session ID
             success: Whether the request was successful
         """
         if not success:
-            # Mark session as degraded if request failed
-            await self.db.update_session_status(session_id, "degraded")
+            # TODO: Mark session as degraded if request failed
+            # Currently disabled due to database constraint
+            # await self.db.update_session_status(session_id, "degraded")
+            pass
     
     async def get_session_count(self) -> int:
         """Get total number of sessions."""

@@ -458,90 +458,182 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
 async def generate_image(request: ImageGenerationRequest):
     """
     Image generation endpoint with Cloudinary integration.
+    Uses cookie-based approach when database is not available.
     """
     request_id = str(uuid.uuid4())
     start_time = time.time()
-    
-    try:
-        # Get session and generate image
-        sm = await get_session_manager()
-        session = await sm.acquire_session()
-        
-        if not session:
-            raise HTTPException(status_code=503, detail="No available sessions")
-        
-        # Create Grok client
-        grok_client = GrokClient(session['cookies'])
-        
+
+    # Get cookie manager
+    cm = get_cookie_manager()
+    max_retries = cm.get_total_count()
+
+    if max_retries == 0:
+        raise HTTPException(
+            status_code=503,
+            detail="No cookies configured. Please set COOKIE_1 environment variable."
+        )
+
+    last_error = None
+
+    # Try each cookie
+    for attempt in range(max_retries):
         try:
-            # Generate image
-            response = await grok_client.generate_image(
-                prompt=request.prompt,
-                model=request.model
+            # Get next available cookie
+            cookie_info = cm.get_next_cookie()
+
+            # Create Grok client with this cookie
+            grok_client = GrokClient(
+                session_cookies=cookie_info["cookies_dict"],
+                user_agent=cookie_info["user_agent"]
             )
-            
-            await grok_client.close()
-            
-            # Extract image URL from response
-            # (Adjust based on actual Grok API response format)
-            image_url = None
-            if 'choices' in response and response['choices']:
-                content = response['choices'][0].get('message', {}).get('content', '')
-                # Parse image URL from content (format depends on Grok API)
-                urls = re.findall(r'https?://[^\s]+', content)
-                if urls:
-                    image_url = urls[0]
-            
-            # Upload to Cloudinary if we have an image URL
-            cloudinary_url = None
-            if image_url:
-                cloudinary = get_cloudinary_client()
-                upload_result = cloudinary.upload_image(
-                    image_url=image_url,
+
+            try:
+                # Generate image
+                response = await grok_client.generate_image(
                     prompt=request.prompt,
-                    tags=[request.style] if request.style else []
+                    model=request.model
                 )
-                cloudinary_url = upload_result['url']
-            
-            # Calculate latency
-            latency_ms = int((time.time() - start_time) * 1000)
-            
-            # Log to database
-            db = await get_db_client()
-            await db.insert_generation(
-                request_id=request_id,
-                provider="grok",
-                model=request.model,
-                prompt=request.prompt,
-                status=200,
-                latency_ms=latency_ms,
-                session_id=session['id'],
-                response_raw=response,
-                metadata={"cloudinary_url": cloudinary_url} if cloudinary_url else None
-            )
-            
-            # Release session
-            await sm.release_session(session['id'], success=True)
-            
-            # Return response
-            return {
-                "id": request_id,
-                "created": int(time.time()),
-                "data": [
-                    {
-                        "url": cloudinary_url or image_url or "pending"
-                    }
-                ]
-            }
-            
+
+                await grok_client.close()
+
+                # Extract image URL from response
+                # (Adjust based on actual Grok API response format)
+                image_url = None
+                if 'choices' in response and response['choices']:
+                    content = response['choices'][0].get('message', {}).get('content', '')
+                    # Parse image URL from content (format depends on Grok API)
+                    urls = re.findall(r'https?://[^\s]+', content)
+                    if urls:
+                        image_url = urls[0]
+
+                # Upload to Cloudinary if we have an image URL
+                cloudinary_url = None
+                if image_url:
+                    cloudinary = get_cloudinary_client()
+                    upload_result = cloudinary.upload_image(
+                        image_url=image_url,
+                        prompt=request.prompt,
+                        tags=[request.style] if request.style else []
+                    )
+                    cloudinary_url = upload_result['url']
+
+                # Calculate latency
+                latency_ms = int((time.time() - start_time) * 1000)
+
+                # Log to database (optional)
+                try:
+                    db = await get_db_client()
+                    if db:
+                        await db.insert_generation(
+                            request_id=request_id,
+                            provider="grok",
+                            model=request.model,
+                            prompt=request.prompt,
+                            status=200,
+                            latency_ms=latency_ms,
+                            session_id=None,  # No session ID in cookie mode
+                            response_raw=response,
+                            metadata={"cloudinary_url": cloudinary_url} if cloudinary_url else None
+                        )
+                except Exception as db_error:
+                    # Database logging is optional, don't fail request
+                    logger.warning(f"Failed to log to database: {db_error}")
+
+                # Mark cookie as successful
+                cm.mark_cookie_success(cookie_info["index"])
+
+                # Return response
+                return {
+                    "id": request_id,
+                    "created": int(time.time()),
+                    "data": [
+                        {
+                            "url": cloudinary_url or image_url or "pending"
+                        }
+                    ]
+                }
+
+            except RateLimitException as e:
+                # Rate limit hit - mark cookie failed and try next
+                cm.mark_cookie_failed(cookie_info["index"], "rate_limit")
+                last_error = str(e)
+                logger.warning(f"Cookie {cookie_info['index']} hit rate limit: {e}")
+                await grok_client.close()
+
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"All cookies exhausted due to rate limits: {last_error}"
+                    )
+
+                # Otherwise continue to next cookie
+                continue
+
+            except AuthenticationException as e:
+                # Auth failed - mark cookie failed and try next
+                cm.mark_cookie_failed(cookie_info["index"], "auth_failed")
+                last_error = str(e)
+                logger.warning(f"Cookie {cookie_info['index']} auth failed: {e}")
+                await grok_client.close()
+
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=401,
+                        detail=f"All cookies failed authentication: {last_error}"
+                    )
+
+                # Otherwise continue to next cookie
+                continue
+
+            except CookieExpiredException as e:
+                # Cookie expired - mark failed and try next
+                cm.mark_cookie_failed(cookie_info["index"], "expired")
+                last_error = str(e)
+                logger.warning(f"Cookie {cookie_info['index']} expired: {e}")
+                await grok_client.close()
+
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=401,
+                        detail=f"All cookies expired: {last_error}"
+                    )
+
+                # Otherwise continue to next cookie
+                continue
+
+            except Exception as e:
+                # Other error - mark as failed but with unknown error type
+                cm.mark_cookie_failed(cookie_info["index"], "unknown")
+                last_error = str(e)
+                logger.error(f"Cookie {cookie_info['index']} unexpected error: {e}")
+                await grok_client.close()
+
+                # If this was the last cookie, raise error
+                if attempt == max_retries - 1:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"All cookies failed: {last_error}"
+                    )
+
+                # Otherwise continue to next cookie
+                continue
+
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
         except Exception as e:
-            await sm.release_session(session['id'], success=False)
-            raise e
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            # Unexpected error in retry logic itself
+            logger.error(f"Unexpected error in retry logic: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # Should never reach here, but just in case
+    raise HTTPException(
+        status_code=503,
+        detail="Failed to complete request after all retries"
+    )
 
 
 # ============================================================================
